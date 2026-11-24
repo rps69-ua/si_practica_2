@@ -284,10 +284,15 @@ def train_many_and_plot(x_train, y_train, x_test, y_test, configs, repetitions=1
 #
 
 def ejercicio1(x_train, y_train, x_test, y_test):
+    capas = [("Flaten",), ("Dense", 128), ("sigmoid", ), ("Dense", 64, ), ("sigmoid", ), ]
 
-    defntest_model(x_train, y_train, x_test, y_test, epochs=35, repetitions=3, 
-                   layers=[("Flaten",), ("Dense", 128), ("sigmoid", ), ("Dense", 64, ), ("sigmoid", ), ],
-                   fig_file_name="128+64_Sigm_EP100.pdf")
+    # 100 épocas para observar el sobreentrenamiento
+    defntest_model(x_train, y_train, x_test, y_test, epochs=100, repetitions=3,
+                   layers=capas, fig_file_name="128+64_Sigm_EP100.pdf")
+
+    # Verificación con las 35 épocas elegidas
+    defntest_model(x_train, y_train, x_test, y_test, epochs=35, repetitions=3,
+                   layers=capas, fig_file_name="128+64_Sigm_EP35.pdf")
 
 
 def ejercicio2(x_train, y_train, x_test, y_test):
@@ -297,23 +302,10 @@ def ejercicio2(x_train, y_train, x_test, y_test):
             "layers": [("Flaten", ), ("Dense", 128), ("sigmoid", ), ("Dense", 128), ("sigmoid", )],
             "scaling": [0, 1],
             "kernel_initializer": "glorot_uniform",
-            "batch_size": 16,
-            "learning_rate": 0.001,
-            "epochs": 100,
-            "patience": 10,
-            "show_fig": False,
-            "verbose": 2,
-            "label": "BS 16",
-            "fig_file_name": "2x128_Sigm_BS16.pdf",
-        },
-        {
-            "layers": [("Flaten", ), ("Dense", 128), ("sigmoid", ), ("Dense", 128), ("sigmoid", )],
-            "scaling": [0, 1],
-            "kernel_initializer": "glorot_uniform",
             "batch_size": 128,
             "learning_rate": 0.001,
             "epochs": 100,
-            "patience": 10,
+            "patience": 20,
             "show_fig": False,
             "verbose": 2,
             "label": "BS 128",
@@ -326,11 +318,24 @@ def ejercicio2(x_train, y_train, x_test, y_test):
             "batch_size": 1024,
             "learning_rate": 0.001,
             "epochs": 100,
-            "patience": 10,
+            "patience": 20,
             "show_fig": False,
             "verbose": 2,
             "label": "BS 1024",
             "fig_file_name": "2x128_Sigm_BS1024.pdf",
+        },
+        {
+            "layers": [("Flaten", ), ("Dense", 128), ("sigmoid", ), ("Dense", 128), ("sigmoid", )],
+            "scaling": [0, 1],
+            "kernel_initializer": "glorot_uniform",
+            "batch_size": 2048,
+            "learning_rate": 0.001,
+            "epochs": 100,
+            "patience": 20,
+            "show_fig": False,
+            "verbose": 2,
+            "label": "BS 2048",
+            "fig_file_name": "2x128_Sigm_BS2048.pdf",
         },
     ]
     train_many_and_plot(x_train, y_train, x_test, y_test, configs, repetitions=3,
@@ -345,7 +350,7 @@ def ejercicio2(x_train, y_train, x_test, y_test):
             "batch_size": 256,
             "learning_rate": 0.01,
             "epochs": 100,
-            "patience": 10,
+            "patience": 20,
             "show_fig": False,
             "verbose": 2,
             "label": "LR 0.01",
@@ -358,7 +363,7 @@ def ejercicio2(x_train, y_train, x_test, y_test):
             "batch_size": 256,
             "learning_rate": 0.001,
             "epochs": 100,
-            "patience": 10,
+            "patience": 20,
             "show_fig": False,
             "verbose": 2,
             "label": "LR 0.001",
@@ -371,7 +376,7 @@ def ejercicio2(x_train, y_train, x_test, y_test):
             "batch_size": 256,
             "learning_rate": 0.0001,
             "epochs": 100,
-            "patience": 10,
+            "patience": 20,
             "show_fig": False,
             "verbose": 2,
             "label": "LR 0.0001",
@@ -383,11 +388,98 @@ def ejercicio2(x_train, y_train, x_test, y_test):
                         save_file_name="comp_2x128_Sigm_LR.pdf")
 
 
+def crear_capas(num_capas, activacion, bn=False):
+
+    # Devuelve la lista de capas de un MLP con num_capas capas Dense de 128 neuronas
+    # Si bn=True, añade BatchNormalization entre la Dense y la activación,
+    # en todas las capas ocultas excepto la última 
+
+    capas = [("Flaten", )]
+    for i in range(num_capas):
+        capas.append(("Dense", 128))
+        if bn and i < num_capas - 1:
+            capas.append(("BN", ))
+        capas.append((activacion, ))
+    return capas
+
+
+def ejercicio3(x_train, y_train, x_test, y_test):
+
+    # (activación, escalado, inicializador) recomendados en el enunciado para cada activación
+    activaciones = [
+        ("sigmoid", [0, 1], "glorot_normal"),
+        ("tanh", [-1, 1], "glorot_normal"),
+        ("relu", [-2, 2], "he_normal"),
+        ("gelu", [-2, 2], "he_normal"),
+        ("selu", [-2, 2], "lecun_normal"),
+    ]
+
+    # Una gráfica de barras por profundidad, comparando las activaciones
+    for num_capas in [2, 4, 8]:
+        configs = []
+        for activacion, scaling, inicializador in activaciones:
+            configs.append({
+                "layers": crear_capas(num_capas, activacion),
+                "scaling": scaling,
+                "kernel_initializer": inicializador,
+                "batch_size": 1024,
+                "learning_rate": 0.001,
+                "epochs": 100,
+                "patience": 20,
+                "show_fig": False,
+                "verbose": 2,
+                "label": activacion,
+                "fig_file_name": str(num_capas) + "x128_" + activacion + ".pdf",
+            })
+        train_many_and_plot(x_train, y_train, x_test, y_test, configs, repetitions=3,
+                            title=str(num_capas) + "x128, variando activación",
+                            save_file_name="comp_" + str(num_capas) + "x128_activaciones.pdf")
+
+
+def ejercicio4(x_train, y_train, x_test, y_test):
+
+    # (activación, etiqueta corta, escalado, inicializador). SELU no se usa: BN rompe su autonormalización
+    activaciones = [
+        ("sigmoid", "sigm", [0, 1], "glorot_normal"),
+        ("tanh", "tanh", [-1, 1], "glorot_normal"),
+        ("relu", "relu", [-2, 2], "he_normal"),
+        ("gelu", "gelu", [-2, 2], "he_normal"),
+    ]
+
+    # Solo redes de 4 y 8 capas: en redes poco profundas BN no compensa
+    for num_capas in [4, 8]:
+        configs = []
+        for activacion, etiqueta, scaling, inicializador in activaciones:
+            for bn in [False, True]:
+                if bn:
+                    sufijo = "_BN"
+                    label = etiqueta + "+BN"
+                else:
+                    sufijo = "_sinBN"
+                    label = etiqueta
+                configs.append({
+                    "layers": crear_capas(num_capas, activacion, bn),
+                    "scaling": scaling,
+                    "kernel_initializer": inicializador,
+                    "batch_size": 1024,
+                    "learning_rate": 0.001,
+                    "epochs": 100,
+                    "patience": 20,
+                    "show_fig": False,
+                    "verbose": 2,
+                    "label": label,
+                    "fig_file_name": str(num_capas) + "x128_" + activacion + sufijo + ".pdf",
+                })
+        train_many_and_plot(x_train, y_train, x_test, y_test, configs, repetitions=3,
+                            title=str(num_capas) + "x128, con y sin BN",
+                            save_file_name="comp_" + str(num_capas) + "x128_BN.pdf")
+
 
 if __name__ == "__main__":
 
     (x_train, y_train), (x_test, y_test) = load_cifar10()
 
-    #ejercicio1(x_train, y_train, x_test, y_test)
-    ejercicio2(x_train, y_train, x_test, y_test)
-
+    ejercicio1(x_train, y_train, x_test, y_test)
+    #ejercicio2(x_train, y_train, x_test, y_test)
+    #ejercicio3(x_train, y_train, x_test, y_test)
+    #ejercicio4(x_train, y_train, x_test, y_test)
