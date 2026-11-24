@@ -479,7 +479,7 @@ if __name__ == "__main__":
 
     (x_train, y_train), (x_test, y_test) = load_cifar10()
 
-    ejercicio1(x_train, y_train, x_test, y_test)
+    #ejercicio1(x_train, y_train, x_test, y_test)
     #ejercicio2(x_train, y_train, x_test, y_test)
     #ejercicio3(x_train, y_train, x_test, y_test)
-    #ejercicio4(x_train, y_train, x_test, y_test)
+    ejercicio4(x_train, y_train, x_test, y_test)
